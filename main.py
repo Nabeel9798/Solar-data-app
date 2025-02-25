@@ -17,22 +17,22 @@ def get_nearest_from_github(lat, lon):
         # Read CSV directly from the response
         df = pd.read_csv(io.StringIO(response.text))
 
-        # ✅ Ensure columns are correctly named
-        df.columns = ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]
+        # ✅ Ensure correct column names
+        expected_columns = ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]
+        if len(df.columns) != len(expected_columns):
+            return {"error": f"CSV format issue: Expected {len(expected_columns)} columns, got {len(df.columns)}"}
 
-        # ✅ Fill missing values with 0
+        df.columns = expected_columns
+
+        # ✅ Handle missing values by replacing them with 0
         df.fillna(0, inplace=True)
 
-        # ✅ Convert necessary columns to numeric
-        df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
-        df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
-        df["GHI"] = pd.to_numeric(df["GHI"], errors="coerce").fillna(0)
-        df["DNI"] = pd.to_numeric(df["DNI"], errors="coerce").fillna(0)
-        df["DIF"] = pd.to_numeric(df["DIF"], errors="coerce").fillna(0)
-        df["TEMP"] = pd.to_numeric(df["TEMP"], errors="coerce").fillna(0)
+        # ✅ Convert columns to appropriate numeric types
+        for col in ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]:
+            df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-        # ✅ Ensure valid lat/lon values
-        df.dropna(subset=["Latitude", "Longitude"], inplace=True)
+        # ✅ Ensure valid Latitude & Longitude
+        df = df[(df["Latitude"] != 0) & (df["Longitude"] != 0)]
 
         # 📍 Find the nearest location
         df["distance"] = ((df["Latitude"] - lat) ** 2 + (df["Longitude"] - lon) ** 2)
