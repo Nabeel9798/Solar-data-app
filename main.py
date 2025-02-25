@@ -37,7 +37,7 @@ app.add_middleware(
     allow_origins=[
     "https://nabeel9798.github.io/Solar-data-app/",
     "https://solar-data-app-production.up.railway.app"
-]
+],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
