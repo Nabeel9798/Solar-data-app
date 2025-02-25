@@ -5,17 +5,14 @@ import requests
 import io
 import os
 
-# GitHub Raw CSV File URL
-GITHUB_CSV_URL = "https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/frncztuioygz/b/solar-data-bucket/o/Solardata_1.csv"
+# Oracle Object Storage Public URL (Replace with your actual URL)
+ORACLE_CSV_URL = "https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/frncztuioygz/b/solar-data-bucket/o/Solardata_1.csv"
 
-# Function to fetch only necessary rows from GitHub CSV
-def get_nearest_from_github(lat, lon):
+# Function to fetch only necessary rows from Oracle CSV
+def get_nearest_from_oracle(lat, lon):
     try:
-        response = requests.get(GITHUB_CSV_URL)
+        response = requests.get(ORACLE_CSV_URL)
         response.raise_for_status()  # Raise error if request fails
-
-        # 🔍 Debugging: Print raw CSV response (first 500 characters)
-        print("Raw CSV Response:\n", response.text[:500])
 
         # ✅ Explicitly set the delimiter to ensure correct parsing
         df = pd.read_csv(io.StringIO(response.text), delimiter=",")
@@ -45,6 +42,8 @@ def get_nearest_from_github(lat, lon):
             "DNI": nearest_row["DNI"],
             "DIF": nearest_row["DIF"]
         }
+    except requests.exceptions.RequestException as e:
+        return {"error": f"Failed to fetch data from Oracle Storage: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
 
@@ -65,7 +64,7 @@ app.add_middleware(
 
 @app.get("/get_solar_data")
 def get_solar_data(lat: float = Query(...), lon: float = Query(...)):
-    return get_nearest_from_github(lat, lon)
+    return get_nearest_from_oracle(lat, lon)
 
 # Run server
 if __name__ == "__main__":
