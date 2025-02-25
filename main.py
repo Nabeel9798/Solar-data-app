@@ -4,13 +4,12 @@ import pandas as pd
 import requests
 import io
 
-# Google Drive File ID (Extracted from your link)
-FILE_ID = "1XMirzg03viOr5GSK2WbsQ0-lIe_VI5jB"
+# GitHub Raw CSV File URL
+GITHUB_CSV_URL = "https://raw.githubusercontent.com/Nabeel9798/Solar-data-app/main/Solardata_1.csv"
 
-# Function to fetch only necessary rows from Google Drive
-def get_nearest_from_drive(lat, lon):
-    URL = f"https://drive.google.com/uc?id={FILE_ID}"  # Direct access link
-    response = requests.get(URL)
+# Function to fetch only necessary rows from GitHub CSV
+def get_nearest_from_github(lat, lon):
+    response = requests.get(GITHUB_CSV_URL)
     response.raise_for_status()  # Raise error if request fails
 
     # Read CSV directly from the response
@@ -42,7 +41,7 @@ app.add_middleware(
 
 @app.get("/get_solar_data")
 def get_solar_data(lat: float = Query(...), lon: float = Query(...)):
-    return get_nearest_from_drive(lat, lon)
+    return get_nearest_from_github(lat, lon)
 
 # Run server
 if __name__ == "__main__":
