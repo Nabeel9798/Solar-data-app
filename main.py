@@ -14,25 +14,26 @@ def get_nearest_from_github(lat, lon):
         response = requests.get(GITHUB_CSV_URL)
         response.raise_for_status()  # Raise error if request fails
 
-        # Read CSV directly from the response
-        df = pd.read_csv(io.StringIO(response.text))
+        # 🔍 Debugging: Print raw CSV response (first 500 characters)
+        print("Raw CSV Response:\n", response.text[:500])
+
+        # ✅ Explicitly set the delimiter to ensure correct parsing
+        df = pd.read_csv(io.StringIO(response.text), delimiter=",")
 
         # ✅ Ensure correct column names
         expected_columns = ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]
-        if len(df.columns) != len(expected_columns):
-            return {"error": f"CSV format issue: Expected {len(expected_columns)} columns, got {len(df.columns)}"}
+        if list(df.columns) != expected_columns:
+            return {"error": f"CSV format issue: Expected columns {expected_columns}, but got {list(df.columns)}"}
 
-        df.columns = expected_columns
-
-        # ✅ Handle missing values by replacing them with 0
+        # ✅ Fill missing values with 0
         df.fillna(0, inplace=True)
 
-        # ✅ Convert columns to appropriate numeric types
-        for col in ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]:
+        # ✅ Convert necessary columns to numeric
+        for col in ["Latitude", "Longitude", "GHI", "DNI", "DIF", "TEMP"]:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
 
-        # ✅ Ensure valid Latitude & Longitude
-        df = df[(df["Latitude"] != 0) & (df["Longitude"] != 0)]
+        # ✅ Ensure valid lat/lon values
+        df.dropna(subset=["Latitude", "Longitude"], inplace=True)
 
         # 📍 Find the nearest location
         df["distance"] = ((df["Latitude"] - lat) ** 2 + (df["Longitude"] - lon) ** 2)
