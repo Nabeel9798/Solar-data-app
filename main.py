@@ -1,14 +1,14 @@
+import os
 import oci
+import uvicorn
 from fastapi import FastAPI
 
 app = FastAPI()
 
-@app.get("/test_oci_config")
-def test_oci_config():
-    try:
-        # Try loading the Oracle Cloud config file
-        config = oci.config.from_file("/app/.oci/config")
-        return {"message": "✅ Oracle SDK Config Loaded Successfully!"}
-    except Exception as e:
-        return {"error": str(e)}
+@app.get("/")
+def read_root():
+    return {"message": "App is running!"}
 
+if __name__ == "__main__":
+    port = int(os.getenv("PORT", 8000))  # Read PORT from Railway env variables
+    uvicorn.run(app, host="0.0.0.0", port=port)
