@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
 import requests
 import io
+import os
 
 # GitHub Raw CSV File URL
 GITHUB_CSV_URL = "https://raw.githubusercontent.com/Nabeel9798/Solar-data-app/main/Solardata_1.csv"
@@ -33,7 +34,10 @@ app = FastAPI()
 # Enable CORS for frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+    "https://nabeel9798.github.io/Solar-data-app/",
+    "https://solar-data-app-production.up.railway.app"
+]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -46,4 +50,5 @@ def get_solar_data(lat: float = Query(...), lon: float = Query(...)):
 # Run server
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    port = int(os.getenv("PORT", 8080))  # Set port to 8080
+    uvicorn.run(app, host="0.0.0.0", port=port)
