@@ -6,7 +6,7 @@ import io
 import os
 
 # GitHub Raw CSV File URL
-GITHUB_CSV_URL = "https://raw.githubusercontent.com/Nabeel9798/Solar-data-app/main/Solardata_1.csv"
+GITHUB_CSV_URL = "https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/frncztuioygz/b/solar-data-bucket/o/Solardata_1.csv"
 
 # Function to fetch only necessary rows from GitHub CSV
 def get_nearest_from_github(lat, lon):
