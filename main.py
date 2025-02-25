@@ -10,23 +10,42 @@ GITHUB_CSV_URL = "https://raw.githubusercontent.com/Nabeel9798/Solar-data-app/ma
 
 # Function to fetch only necessary rows from GitHub CSV
 def get_nearest_from_github(lat, lon):
-    response = requests.get(GITHUB_CSV_URL)
-    response.raise_for_status()  # Raise error if request fails
+    try:
+        response = requests.get(GITHUB_CSV_URL)
+        response.raise_for_status()  # Raise error if request fails
 
-    # Read CSV directly from the response
-    df = pd.read_csv(io.StringIO(response.text))
-    df.fillna(0, inplace=True)  # Handle missing values
+        # Read CSV directly from the response
+        df = pd.read_csv(io.StringIO(response.text))
 
-    # Find nearest location
-    df["distance"] = ((df["Latitude"] - lat) ** 2 + (df["Longitude"] - lon) ** 2)
-    nearest_row = df.loc[df["distance"].idxmin()]
+        # ✅ Ensure columns are correctly named
+        df.columns = ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]
 
-    return {
-        "GHI": nearest_row["GHI"],
-        "DNI": nearest_row["DNI"],
-        "DIF": nearest_row["DIF"],
-        "TEMP": nearest_row["TEMP"]
-    }
+        # ✅ Fill missing values with 0
+        df.fillna(0, inplace=True)
+
+        # ✅ Convert necessary columns to numeric
+        df["Latitude"] = pd.to_numeric(df["Latitude"], errors="coerce")
+        df["Longitude"] = pd.to_numeric(df["Longitude"], errors="coerce")
+        df["GHI"] = pd.to_numeric(df["GHI"], errors="coerce").fillna(0)
+        df["DNI"] = pd.to_numeric(df["DNI"], errors="coerce").fillna(0)
+        df["DIF"] = pd.to_numeric(df["DIF"], errors="coerce").fillna(0)
+        df["TEMP"] = pd.to_numeric(df["TEMP"], errors="coerce").fillna(0)
+
+        # ✅ Ensure valid lat/lon values
+        df.dropna(subset=["Latitude", "Longitude"], inplace=True)
+
+        # 📍 Find the nearest location
+        df["distance"] = ((df["Latitude"] - lat) ** 2 + (df["Longitude"] - lon) ** 2)
+        nearest_row = df.loc[df["distance"].idxmin()]
+
+        return {
+            "TEMP": nearest_row["TEMP"],
+            "GHI": nearest_row["GHI"],
+            "DNI": nearest_row["DNI"],
+            "DIF": nearest_row["DIF"]
+        }
+    except Exception as e:
+        return {"error": str(e)}
 
 # Initialize FastAPI app
 app = FastAPI()
@@ -35,9 +54,9 @@ app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-    "https://nabeel9798.github.io/Solar-data-app/",
-    "https://solar-data-app-production.up.railway.app"
-],
+        "https://nabeel9798.github.io/Solar-data-app/",
+        "https://solar-data-app-production.up.railway.app"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
