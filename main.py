@@ -15,7 +15,7 @@ client = gspread.authorize(creds)
 
 # ✅ Define Google Sheet ID & Name
 GOOGLE_SHEET_ID = "1JfFfUDvW-jmid3pEcocDMc57wXCQGUoOOWbWMszzLnM"  # Replace with your actual Google Sheet ID
-SHEET_NAME = "Sheet1"  # Change if your sheet name is different
+SHEET_NAME = "solardata_2shp"  # Change if your sheet name is different
 
 # ✅ Function to fetch nearest solar data from Google Sheets
 def get_nearest_from_google_sheets(lat, lon):
