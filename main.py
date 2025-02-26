@@ -1,36 +1,41 @@
 from fastapi import FastAPI, Query
 from fastapi.middleware.cors import CORSMiddleware
 import pandas as pd
-import requests
-import io
+import gspread
+import json
 import os
+from google.oauth2.service_account import Credentials
 
-# Oracle Object Storage Public URL (Replace with your actual URL)
-ORACLE_CSV_URL = "https://objectstorage.eu-frankfurt-1.oraclecloud.com/n/frncztuioygz/b/solar-data-bucket/o/Solardata_1.csv"
+# ✅ Load Google Credentials from Railway Environment Variables
+GOOGLE_CREDENTIALS = json.loads(os.getenv("GOOGLE_CREDENTIALS", "{}"))
 
-# Function to fetch only necessary rows from Oracle CSV
-def get_nearest_from_oracle(lat, lon):
+# ✅ Authenticate Google Sheets API
+creds = Credentials.from_service_account_info(GOOGLE_CREDENTIALS, scopes=["https://www.googleapis.com/auth/spreadsheets"])
+client = gspread.authorize(creds)
+
+# ✅ Define Google Sheet ID & Name
+GOOGLE_SHEET_ID = "1JfFfUDvW-jmid3pEcocDMc57wXCQGUoOOWbWMszzLnM"  # Replace with your actual Google Sheet ID
+SHEET_NAME = "Sheet1"  # Change if your sheet name is different
+
+# ✅ Function to fetch nearest solar data from Google Sheets
+def get_nearest_from_google_sheets(lat, lon):
     try:
-        response = requests.get(ORACLE_CSV_URL)
-        response.raise_for_status()  # Raise error if request fails
+        sheet = client.open_by_key(GOOGLE_SHEET_ID).worksheet(SHEET_NAME)
+        data = sheet.get_all_records()
 
-        # ✅ Explicitly set the delimiter to ensure correct parsing
-        df = pd.read_csv(io.StringIO(response.text), delimiter=",")
+        if not data:
+            return {"error": "No data found in the Google Sheet"}
+
+        df = pd.DataFrame(data)
 
         # ✅ Ensure correct column names
         expected_columns = ["TEMP", "GHI", "DNI", "DIF", "Latitude", "Longitude"]
-        if list(df.columns) != expected_columns:
-            return {"error": f"CSV format issue: Expected columns {expected_columns}, but got {list(df.columns)}"}
-
-        # ✅ Fill missing values with 0
-        df.fillna(0, inplace=True)
+        if not all(col in df.columns for col in expected_columns):
+            return {"error": f"Google Sheet format issue: Expected columns {expected_columns}, but got {list(df.columns)}"}
 
         # ✅ Convert necessary columns to numeric
         for col in ["Latitude", "Longitude", "GHI", "DNI", "DIF", "TEMP"]:
             df[col] = pd.to_numeric(df[col], errors="coerce").fillna(0)
-
-        # ✅ Ensure valid lat/lon values
-        df.dropna(subset=["Latitude", "Longitude"], inplace=True)
 
         # 📍 Find the nearest location
         df["distance"] = ((df["Latitude"] - lat) ** 2 + (df["Longitude"] - lon) ** 2)
@@ -42,32 +47,28 @@ def get_nearest_from_oracle(lat, lon):
             "DNI": nearest_row["DNI"],
             "DIF": nearest_row["DIF"]
         }
-    except requests.exceptions.RequestException as e:
-        return {"error": f"Failed to fetch data from Oracle Storage: {str(e)}"}
     except Exception as e:
         return {"error": str(e)}
 
-# Initialize FastAPI app
+# ✅ Initialize FastAPI App
 app = FastAPI()
 
-# Enable CORS for frontend access
+# ✅ Enable CORS for frontend access
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "https://nabeel9798.github.io/Solar-data-app/",
-        "https://solar-data-app-production.up.railway.app"
-    ],
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ API Route to Fetch Solar Data
 @app.get("/get_solar_data")
 def get_solar_data(lat: float = Query(...), lon: float = Query(...)):
-    return get_nearest_from_oracle(lat, lon)
+    return get_nearest_from_google_sheets(lat, lon)
 
-# Run server
+# ✅ Run Server in Local (Not needed in Railway)
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.getenv("PORT", 8080))  # Set port to 8080
+    port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
