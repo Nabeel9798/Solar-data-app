@@ -2,4 +2,5 @@ fastapi
 uvicorn
 pandas
 requests
-oci
+google-auth
+gspread
