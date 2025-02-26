@@ -1,2 +1,0 @@
-*.csv filter=lfs diff=lfs merge=lfs -text
-Solardata_1.csv filter=lfs diff=lfs merge=lfs -text
