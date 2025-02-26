@@ -4,6 +4,7 @@ import pandas as pd
 import gspread
 import json
 import os
+import uvicorn
 from google.oauth2.service_account import Credentials
 
 # ✅ Load Google Credentials from Railway Environment Variables
@@ -72,6 +73,13 @@ if __name__ == "__main__":
     import uvicorn
     port = int(os.getenv("PORT", 8080))
     uvicorn.run(app, host="0.0.0.0", port=port)
+from fastapi import FastAPI
+
+app = FastAPI()
+
 @app.get("/")
-def root():
-    return {"message": "API is running. Use /get_solar_data?lat=LAT&lon=LON to fetch data."}
+def read_root():
+    return {"message": "Solar Data API is running!"}
+
+import os
+print("GOOGLE_CREDENTIALS:", os.getenv("GOOGLE_CREDENTIALS"))
